@@ -359,7 +359,7 @@ function cast(px,py,rdx,rdy){
 }
 function los(x0,y0,x1,y1){const dx=x1-x0,dy=y1-y0,d=Math.hypot(dx,dy),n=Math.ceil(d*4);for(let i=1;i<n;i++){const k=i/n;if(solid(x0+dx*k,y0+dy*k))return false}return true}
 
-let pitch=0;const PMAX=H*.55;
+let pitch=0;const PMAX=H*.4;
 
 function render(time){
   const HZ=H/2+pitch;
@@ -593,12 +593,21 @@ let locked=false;
 function lock(){try{const p=cv.requestPointerLock&&cv.requestPointerLock();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
 function unlock(){try{if(document.pointerLockElement)document.exitPointerLock()}catch(e){}mouseDown=false;for(const k in keys)keys[k]=false}
 document.addEventListener('pointerlockchange',()=>{
-  const was=locked;locked=document.pointerLockElement===cv;
+  const was=locked;locked=document.pointerLockElement===cv;if(locked&&!was)lockAt=performance.now();
   if(was&&!locked&&state==='play'){state='pause';$('pause').hidden=false;mouseDown=false}
 });
 cv.addEventListener('mousedown',e=>{if(state!=='play')return;audioInit();if(!locked&&!isTouch)lock();mouseDown=true});
 addEventListener('mouseup',()=>mouseDown=false);
-addEventListener('mousemove',e=>{if(locked&&state==='play'){player.a+=e.movementX*.0025;pitch=Math.max(-PMAX,Math.min(PMAX,pitch-e.movementY*.35))}});
+// Chrome a veces manda un primer movimiento enorme y falso al capturar el mouse:
+// se ignoran los eventos de los primeros 150 ms tras la captura y cualquier salto imposible.
+let lockAt=0;
+addEventListener('mousemove',e=>{
+  if(!locked||state!=='play')return;
+  if(performance.now()-lockAt<150)return;
+  const mx=e.movementX,my=e.movementY;
+  if(Math.abs(mx)>250||Math.abs(my)>250)return;
+  player.a+=mx*.0025;pitch=Math.max(-PMAX,Math.min(PMAX,pitch-my*.35));
+});
 
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
 const touchMove={x:0,y:0,mag:0};
