@@ -264,34 +264,61 @@ let flash={hurt:0,pick:0,muzzle:0},kick=0,bob=0,msgs=[],totalKills=0,runTime=0;
 const zbuf=new Float32Array(W);
 function hash(a,b,s){let h=Math.imul(a|0,374761393)^Math.imul(b|0,668265263)^Math.imul(s|0,-2048144777)^worldSeed;h=Math.imul(h^(h>>>13),1274126177);return(h^(h>>>16))>>>0}
 function rng(seed){let t=seed>>>0;return()=>{t=(t+0x6D2B79F5)>>>0;let r=Math.imul(t^(t>>>15),1|t);r^=r+Math.imul(r^(r>>>7),61|r);return((r^(r>>>14))>>>0)/4294967296}}
-const door=(ax,ay,dir)=>2+hash(ax,ay,dir+7)%12;
-const zoneOf=(cx,cy)=>Math.max(Math.abs(cx),Math.abs(cy))+1;
+/* Laberinto por bloques: cada bloque de 16×16 es una grilla de 4×4 celdas de 3×3 libres
+   con muros de 1 de espesor → pasillos de 3 de ancho, sin enganches en las esquinas.
+   - Dentro del bloque: árbol de expansión (todas las celdas conectadas) + lazos para que
+     no queden callejones sin salida.
+   - Entre bloques: cada bloque es dueño de su muro este (x=15) y sur (y=15) y abre al
+     menos una puerta en cada uno → el mundo infinito queda siempre conectado.
+   - Halls: a veces se funden 2×2 celdas en una sala de 7×7. */
+const M=4,CS=4;
+const zoneOf=(cx,cy)=>Math.max(1,Math.max(Math.abs(cx),Math.abs(cy)));  // el anillo inicial (3×3 bloques) es zona 1
 function genChunk(cx,cy){
   const R=rng(hash(cx,cy,1)),tex=1+Math.floor(R()*4),g=new Uint8Array(C*C).fill(tex);
-  const carve=(x,y)=>{if(x>=0&&y>=0&&x<C&&y<C)g[y*C+x]=0};
-  const rooms=[],n=1+Math.floor(R()*3);
-  for(let t=0;t<40&&rooms.length<n;t++){
-    const w=3+Math.floor(R()*6),h=3+Math.floor(R()*6),x=1+Math.floor(R()*(C-w-2)),y=1+Math.floor(R()*(C-h-2));
-    if(rooms.some(r=>x<r.x+r.w+1&&x+w+1>r.x&&y<r.y+r.h+1&&y+h+1>r.y))continue;
-    rooms.push({x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)});
-  }
-  for(const r of rooms)for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)carve(x,y);
-  const hx=rooms[0].cx,hy=rooms[0].cy;
-  const path=(x0,y0,x1,y1)=>{for(let x=Math.min(x0,x1);x<=Math.max(x0,x1);x++)carve(x,y0);for(let y=Math.min(y0,y1);y<=Math.max(y0,y1);y++)carve(x1,y)};
-  for(const r of rooms.slice(1))path(hx,hy,r.cx,r.cy);
-  // puertas compartidas con los bloques vecinos: el mundo queda siempre conectado
-  path(C-1,door(cx,cy,0),hx,hy);path(0,door(cx-1,cy,0),hx,hy);
-  path(hx,hy,door(cx,cy,1),C-1);path(hx,hy,door(cx,cy-1,1),0);
-  for(const r of rooms)if(r.w>=6&&r.h>=6&&R()<.5){g[(r.y+1)*C+r.x+1]=4;g[(r.y+r.h-2)*C+r.x+r.w-2]=4}
-  return{cx,cy,g,rooms};
+  const open=(x,y)=>{if(x>=0&&y>=0&&x<C&&y<C)g[y*C+x]=0};
+  const linkE=(i,j)=>{for(let y=0;y<3;y++)open(i*CS+3,j*CS+y)};   // muro entre (i,j) y (i+1,j)
+  const linkS=(i,j)=>{for(let x=0;x<3;x++)open(i*CS+x,j*CS+3)};   // muro entre (i,j) y (i,j+1)
+  for(let j=0;j<M;j++)for(let i=0;i<M;i++)for(let y=0;y<3;y++)for(let x=0;x<3;x++)open(i*CS+x,j*CS+y);
+  const deg=new Uint8Array(M*M),linked=new Set();
+  const link=(i,j,dx,dy)=>{const k=dx?`e${Math.min(i,i+dx)},${j}`:`s${i},${Math.min(j,j+dy)}`;if(linked.has(k))return false;linked.add(k);
+    if(dx)linkE(Math.min(i,i+dx),j);else linkS(i,Math.min(j,j+dy));deg[j*M+i]++;deg[(j+dy)*M+i+dx]++;return true};
+  const DIRS=[[1,0],[-1,0],[0,1],[0,-1]],inside=(i,j)=>i>=0&&j>=0&&i<M&&j<M;
+  // árbol de expansión (DFS sembrado)
+  const vis=new Uint8Array(M*M),st=[[Math.floor(R()*M),Math.floor(R()*M)]];vis[st[0][1]*M+st[0][0]]=1;
+  while(st.length){const[i,j]=st[st.length-1];const nb=DIRS.filter(([dx,dy])=>inside(i+dx,j+dy)&&!vis[(j+dy)*M+i+dx]);
+    if(!nb.length){st.pop();continue}
+    const[dx,dy]=nb[Math.floor(R()*nb.length)];link(i,j,dx,dy);vis[(j+dy)*M+i+dx]=1;st.push([i+dx,j+dy])}
+  // sin callejones: toda celda con una sola salida gana otra
+  for(let j=0;j<M;j++)for(let i=0;i<M;i++)if(deg[j*M+i]<2){const c=DIRS.filter(([dx,dy])=>inside(i+dx,j+dy)&&!linked.has(dx?`e${Math.min(i,i+dx)},${j}`:`s${i},${Math.min(j,j+dy)}`));
+    if(c.length){const[dx,dy]=c[Math.floor(R()*c.length)];link(i,j,dx,dy)}}
+  // algunos lazos extra
+  for(let k=0;k<2;k++){const i=Math.floor(R()*M),j=Math.floor(R()*M),[dx,dy]=DIRS[Math.floor(R()*4)];if(inside(i+dx,j+dy)&&R()<.5)link(i,j,dx,dy)}
+  // hall de 7×7 (2×2 celdas fundidas), con una columna central a veces
+  const rooms=[];let pillar=-1;
+  if(R()<.45){const i0=Math.floor(R()*(M-1)),j0=Math.floor(R()*(M-1));
+    for(let y=0;y<7;y++)for(let x=0;x<7;x++)open(i0*CS+x,j0*CS+y);
+    if(R()<.5){pillar=(j0*CS+3)*C+i0*CS+3;g[pillar]=4}
+    rooms.push({x:i0*CS,y:j0*CS,w:7,h:7,cx:i0*CS+1,cy:j0*CS+1,hall:true})}
+  // puertas hacia los bloques vecinos: este y sur son de este bloque (al menos una por lado)
+  const de=hash(cx,cy,7)%M,ds=hash(cx,cy,8)%M;
+  for(let j=0;j<M;j++)if(j===de||hash(cx,cy,20+j)%100<30)linkE(M-1,j);
+  for(let i=0;i<M;i++)if(i===ds||hash(cx,cy,40+i)%100<30)linkS(i,M-1);
+  // sin columnas sueltas: si en un cruce se abrieron los 4 muros, el poste del medio también se abre
+  for(let j=0;j<M-1;j++)for(let i=0;i<M-1;i++){const x=i*CS+3,y=j*CS+3;
+    if(y*C+x!==pillar&&!g[y*C+x-1]&&!g[y*C+x+1]&&!g[(y-1)*C+x]&&!g[(y+1)*C+x])g[y*C+x]=0}
+  // celdas como "salas" para repartir objetos y enemigos; la (1,1) va primero (punto de partida)
+  const cells=[];for(let j=0;j<M;j++)for(let i=0;i<M;i++)cells.push({x:i*CS,y:j*CS,w:3,h:3,cx:i*CS+1,cy:j*CS+1});
+  cells.sort((a,b)=>(a.x===CS&&a.y===CS?-1:0)-(b.x===CS&&b.y===CS?-1:0));
+  return{cx,cy,g,rooms:cells.concat(rooms)};
 }
 function populate(ch){
   const z=zoneOf(ch.cx,ch.cy),start=ch.cx===0&&ch.cy===0;
   const free=r=>{for(let t=0;t<30;t++){const x=r.x+Math.floor(Math.random()*r.w),y=r.y+Math.floor(Math.random()*r.h);if(!ch.g[y*C+x])return{x:ch.cx*C+x+.5,y:ch.cy*C+y+.5}}return null};
   for(const r of ch.rooms){
-    if(Math.random()<.75){const p=free(r);if(p){const q=Math.random();items.push({kind:q<.28?'med':q<.55?'ammo':q<.8?'shells':'crystal',x:p.x,y:p.y,ph:Math.random()*6})}}
+    if(Math.random()<(r.hall?.8:.2)){const p=free(r);if(p){const q=Math.random();items.push({kind:q<.28?'med':q<.55?'ammo':q<.8?'shells':'crystal',x:p.x,y:p.y,ph:Math.random()*6})}}
     if(start)continue;
-    const k=Math.min(1+Math.floor(Math.random()*(1+z*.6)),4);
+    if(Math.random()>Math.min(.45,(r.hall?.3:.1)+z*.025))continue;
+    const k=1+Math.floor(Math.random()*Math.min(3,1+z*.3));
     for(let i=0;i<k;i++){const p=free(r);if(p)spawnEnemy(p.x,p.y,z)}
   }
 }
@@ -306,7 +333,11 @@ function getChunk(cx,cy){
   if(!ch){ch=genChunk(cx,cy);chunks.set(k,ch);populate(ch)}
   return lastCh=ch;
 }
-const cell=(x,y)=>{const cx=Math.floor(x/C),cy=Math.floor(y/C);return getChunk(cx,cy).g[(y-cy*C)*C+(x-cx*C)]};
+const rawCell=(x,y)=>{const cx=Math.floor(x/C),cy=Math.floor(y/C);return getChunk(cx,cy).g[(y-cy*C)*C+(x-cx*C)]};
+// los postes del borde entre bloques dependen de los dos bloques: si quedaron con los 4 lados abiertos, no son pared
+const cell=(x,y)=>{const v=rawCell(x,y);if(!v)return 0;const lx=x-Math.floor(x/C)*C,ly=y-Math.floor(y/C)*C;
+  if(lx%CS===3&&ly%CS===3&&(lx===C-1||ly===C-1)&&!rawCell(x-1,y)&&!rawCell(x+1,y)&&!rawCell(x,y-1)&&!rawCell(x,y+1))return 0;
+  return v};
 const solid=(x,y)=>cell(Math.floor(x),Math.floor(y))>0;
 
 function newWorld(){
@@ -471,7 +502,7 @@ function update(dt){
   if(level>maxZone){maxZone=level;const b=250*level;score+=b;msg(`ZONA ${level} ALCANZADA +${b}`);SFX.gem()}
   // refuerzos: si hay pocos hostiles cerca, aparecen fuera de la vista
   spawnT-=dt;
-  if(spawnT<=0){spawnT=rnd(6,11)/(1+level*.08);
+  if(spawnT<=0&&runTime>20){spawnT=rnd(6,11)/(1+level*.08);
     const near=enemies.filter(e=>e.state!=='dead'&&Math.hypot(e.x-player.x,e.y-player.y)<14).length;
     if(near<2+Math.min(level,4))for(let t=0;t<25;t++){const a=rnd(0,6.283),d=rnd(9,15),x=Math.floor(player.x+Math.cos(a)*d)+.5,y=Math.floor(player.y+Math.sin(a)*d)+.5;
       if(!solid(x,y)&&!los(player.x,player.y,x,y)){spawnEnemy(x,y,Math.max(1,level));break}}
@@ -491,7 +522,7 @@ function update(dt){
   if(keys.r){mx+=-dy;my+=dx}if(keys.l){mx-=-dy;my-=dx}
   if(touchMove.mag>.1){mx+=dx*-touchMove.y+(-dy)*touchMove.x;my+=dy*-touchMove.y+dx*touchMove.x}
   const ml=Math.hypot(mx,my);
-  if(ml>0){const k=Math.min(1,ml);mx=mx/ml*k;my=my/ml*k;const ox=player.x,oy=player.y;tryMove(player,mx*spd,my*spd,.25);distWalked+=Math.hypot(player.x-ox,player.y-oy);bob+=dt*10*run}
+  if(ml>0){const k=Math.min(1,ml);mx=mx/ml*k;my=my/ml*k;const ox=player.x,oy=player.y;tryMove(player,mx*spd,my*spd,.3);distWalked+=Math.hypot(player.x-ox,player.y-oy);bob+=dt*10*run}
   if(keys.fire||mouseDown)fire();
   // recoger objetos
   items=items.filter(it=>{

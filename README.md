@@ -7,8 +7,10 @@ archivo HTML, sin librerías ni assets externos (salvo fuentes).
 
 ## Qué tiene
 
-- Mundo **infinito procedural** por bloques de 16×16, con puertas compartidas entre
-  bloques para que siempre quede conectado. Cuanto más te alejás del origen, más dura la zona.
+- Mundo **infinito procedural**: laberinto por bloques de 16×16 (4×4 celdas con pasillos
+  de 3 de ancho), árbol de expansión + lazos para que no haya callejones sin salida, halls
+  de 7×7 y puertas garantizadas entre bloques: siempre queda todo conectado. Cuanto más te
+  alejás del origen, más dura la zona (los primeros bloques y los primeros 20 s son tranquilos).
 - Texturas, criaturas, armas y objetos **dibujados por código** (diseño original).
 - Tres tipos de enemigos con IA propia (persecución, distancia, cuerpo a cuerpo y proyectiles).
 - Pistola y escopeta, botiquines, munición y cristales de puntos.
