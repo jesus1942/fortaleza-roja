@@ -20,15 +20,23 @@ archivo HTML, sin librerías ni assets externos (salvo fuentes).
 
 ## Controles
 
-| Tecla | Acción |
+| Entrada | Acción |
 |---|---|
-| W A S D | moverse |
-| Mouse / Q E / ← → | girar |
+| W A S D / flechas | moverse (adelante, atrás, de costado) |
+| Mouse / touchpad | girar y mirar, a la vez que caminás (clic para capturarlo; sin captura, arrastrar con botón derecho) |
+| Q · E | girar con teclado |
 | R · F · C | mirar arriba · abajo · centrar |
 | Clic / Espacio | disparar |
 | 1 · 2 | pistola · escopeta |
 | Shift | correr |
 | M | mapa |
+| Gamepad | stick izq. moverse · stick der. girar · RT/A disparar · Y/LB/RB cambiar arma · Start pausa |
+| Táctil | joystick a la izquierda, deslizar a la derecha para girar, botones FUEGO y ARMA |
+
+La sensibilidad del mouse se ajusta en el menú y en la pausa, y queda guardada.
+
+> **Touchpad:** muchos sistemas apagan el touchpad mientras se aprieta una tecla
+> («deshabilitar touchpad al escribir»). Si no gira mientras caminás, desactivá esa opción.
 
 ## Correr localmente
 

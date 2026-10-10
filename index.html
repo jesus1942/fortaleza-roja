@@ -46,8 +46,11 @@ canvas#cv{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;im
 @media (prefers-reduced-motion:reduce){.num.low{animation:none}}
 @media (max-width:560px){.hud{grid-template-columns:repeat(2,minmax(0,1fr))}.num{font-size:30px}}
 
-.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(11,6,6,.78);padding:16px;box-sizing:border-box}
-.panel{max-width:560px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.overlay{position:absolute;inset:0;display:flex;background:rgba(11,6,6,.78);padding:16px;box-sizing:border-box;overflow-y:auto;z-index:5}
+.panel{max-width:560px;width:100%;margin:auto;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.touchhelp{display:none}
+@media (pointer:coarse){.keys,.tip,.sens{display:none!important}.touchhelp{display:block}}
+@media (max-height:780px){.panel{gap:10px}.panel h1{font-size:clamp(40px,7vh,64px)}.keys{gap:2px 14px;font-size:13px}.keys b{font-size:17px}}
 .panel h1{font-family:var(--f-display);font-weight:400;font-size:clamp(44px,9vw,84px);line-height:.9;margin:0;color:var(--rust);text-shadow:0 3px 0 #3a0b04,0 0 24px rgba(255,90,30,.35);text-wrap:balance}
 .panel h2{font-family:var(--f-display);font-weight:400;font-size:clamp(34px,7vw,56px);margin:0;color:var(--ember);text-wrap:balance}
 .panel p{margin:0;color:var(--bone);line-height:1.5;max-width:46ch}
@@ -57,6 +60,10 @@ canvas#cv{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;im
 .btn:hover{background:#d4421f}
 .btn:focus-visible{outline:3px solid var(--ember);outline-offset:3px}
 .stat{font-family:var(--f-num);font-size:26px;color:var(--ember)}
+.sens{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--dim);flex-wrap:wrap;justify-content:center}
+.sens input{accent-color:var(--rust);width:160px}
+.sens output{font-family:var(--f-num);font-size:19px;color:var(--bone);min-width:3ch}
+.tip{font-size:12px!important;color:var(--dim)!important;max-width:52ch!important}
 
 #touch{position:absolute;inset:0;pointer-events:none}
 .tbtn{position:absolute;pointer-events:auto;border-radius:50%;border:2px solid rgba(234,223,200,.35);background:rgba(184,54,30,.35);color:var(--bone);font-family:var(--f-body);font-weight:700;font-size:13px;letter-spacing:.08em;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none}
@@ -81,21 +88,25 @@ canvas#cv{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;im
         <h1>Fortaleza Roja</h1>
         <p>La fortaleza no tiene fin: cada pasillo genera salas nuevas. Cuanto más te alejás del punto de partida, más dura es la zona y más vale cada baja. Juntá botiquines, munición y cristales para sumar puntos.</p>
         <div class="keys">
-          <b>W A S D</b><span>avanzar y moverse de costado (combinables)</span>
-          <b>Mouse</b><span>girar y mirar arriba/abajo (clic para capturarlo)</span>
+          <b>W A S D / flechas</b><span>avanzar, retroceder y moverse de costado</span>
+          <b>Mouse / touchpad</b><span>girar y mirar arriba/abajo, a la vez que caminás (clic para capturarlo)</span>
+          <b>Q · E</b><span>girar con teclado</span>
           <b>R · F · C</b><span>mirar arriba · abajo · centrar</span>
-          <b>Q · E / ← →</b><span>girar con teclado</span>
+          <b>Gamepad</b><span>stick izq. moverse · stick der. girar · gatillo disparar</span>
           <b>Clic / Espacio</b><span>disparar</span>
           <b>1 · 2</b><span>pistola · escopeta</span>
           <b>Shift</b><span>correr</span>
           <b>M</b><span>mapa</span>
         </div>
+        <label class="sens">Sensibilidad del mouse <input type="range" id="sens" min="0.3" max="3" step="0.1" value="1"> <output id="sensv">1.0×</output></label>
+        <p class="touchhelp">Joystick a la izquierda para moverte · deslizá a la derecha para girar · botón FUEGO para disparar (también gira si lo arrastrás) · ARMA cambia de arma.</p>
         <button class="btn" id="play">Jugar</button>
+        <p class="tip">¿Usás touchpad y no gira mientras caminás? Tu sistema lo apaga al tocar teclas: desactivá «deshabilitar touchpad al escribir» en la configuración del touchpad.</p>
       </div>
     </div>
 
     <div class="overlay" id="pause" hidden>
-      <div class="panel"><h2>Pausa</h2><p>Hacé clic para volver al combate.</p><button class="btn" id="resume">Seguir</button></div>
+      <div class="panel"><h2>Pausa</h2><p>Hacé clic para volver al combate.</p><label class="sens">Sensibilidad del mouse <input type="range" id="sens2" min="0.3" max="3" step="0.1" value="1"></label><button class="btn" id="resume">Seguir</button></div>
     </div>
 
     <div class="overlay" id="dead" hidden>
@@ -414,7 +425,7 @@ function render(time){
 }
 
 function drawWeapon(time){
-  const moving=keys.f||keys.b||keys.l||keys.r||touchMove.mag>.1;
+  const moving=keys.f||keys.b||keys.l||keys.r||touchMove.mag>.1||pad.on;
   const bx=Math.sin(bob)*6*(moving?1:.2),by=Math.abs(Math.cos(bob))*5*(moving?1:.2)+kick*18;
   const cx=W/2+bx+40,base=H+by;
   ctx.save();
@@ -513,7 +524,7 @@ function update(dt){
   for(const k in flash)flash[k]=Math.max(0,flash[k]-dt);
   msgs.forEach(m=>m.t-=dt);msgs=msgs.filter(m=>m.t>0);
   // jugador
-  const run=keys.run?1.7:1,spd=3.2*run*dt,rot=2.6*dt;
+  const run=(keys.run||keys.padRun)?1.7:1,spd=3.2*run*dt,rot=2.6*dt;
   if(keys.tl)player.a-=rot;if(keys.tr)player.a+=rot;
   if(keys.up)pitch=Math.min(PMAX,pitch+160*dt);if(keys.dn)pitch=Math.max(-PMAX,pitch-160*dt);
   const dx=Math.cos(player.a),dy=Math.sin(player.a);
@@ -521,9 +532,10 @@ function update(dt){
   if(keys.f){mx+=dx;my+=dy}if(keys.b){mx-=dx;my-=dy}
   if(keys.r){mx+=-dy;my+=dx}if(keys.l){mx-=-dy;my-=dx}
   if(touchMove.mag>.1){mx+=dx*-touchMove.y+(-dy)*touchMove.x;my+=dy*-touchMove.y+dx*touchMove.x}
+  if(pad.on){mx+=dx*-pad.y+(-dy)*pad.x;my+=dy*-pad.y+dx*pad.x}
   const ml=Math.hypot(mx,my);
   if(ml>0){const k=Math.min(1,ml);mx=mx/ml*k;my=my/ml*k;const ox=player.x,oy=player.y;tryMove(player,mx*spd,my*spd,.3);distWalked+=Math.hypot(player.x-ox,player.y-oy);bob+=dt*10*run}
-  if(keys.fire||mouseDown)fire();
+  if(keys.fire||keys.padFire||mouseDown)fire();
   // recoger objetos
   items=items.filter(it=>{
     if(Math.hypot(it.x-player.x,it.y-player.y)>.55)return true;
@@ -579,7 +591,7 @@ function updateHud(){
 
 /* ---------- Entrada ---------- */
 const keys={};let mouseDown=false;
-const KM={KeyW:'f',ArrowUp:'f',KeyS:'b',ArrowDown:'b',KeyA:'l',KeyD:'r',ArrowLeft:'tl',ArrowRight:'tr',KeyQ:'tl',KeyE:'tr',Space:'fire',ControlLeft:'fire',ShiftLeft:'run',ShiftRight:'run',KeyR:'up',PageUp:'up',KeyF:'dn',PageDown:'dn'};
+const KM={KeyW:'f',ArrowUp:'f',KeyS:'b',ArrowDown:'b',KeyA:'l',KeyD:'r',ArrowLeft:'l',ArrowRight:'r',KeyQ:'tl',KeyE:'tr',Space:'fire',ControlLeft:'fire',ShiftLeft:'run',ShiftRight:'run',KeyR:'up',PageUp:'up',KeyF:'dn',PageDown:'dn'};
 addEventListener('keydown',e=>{
   if(KM[e.code]){keys[KM[e.code]]=true;if(state==='play')e.preventDefault()}
   if(e.code==='KeyC')pitch=0;
@@ -589,24 +601,36 @@ addEventListener('keydown',e=>{
   if(e.code==='Enter'){if(state==='dead')restart();else if(state==='menu')start()}
 });
 addEventListener('keyup',e=>{if(KM[e.code])keys[KM[e.code]]=false});
-let locked=false;
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseDown=false});
+let locked=false,sens=1;
+try{sens=+localStorage.getItem('fr_sens')||1}catch(e){}
+function setSens(v){sens=Math.max(.3,Math.min(3,+v||1));$('sens').value=$('sens2').value=sens;$('sensv').textContent=sens.toFixed(1)+'×';try{localStorage.setItem('fr_sens',sens)}catch(e){}}
+$('sens').addEventListener('input',e=>setSens(e.target.value));$('sens2').addEventListener('input',e=>setSens(e.target.value));
+setSens(sens);
 function lock(){try{const p=cv.requestPointerLock&&cv.requestPointerLock();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
 function unlock(){try{if(document.pointerLockElement)document.exitPointerLock()}catch(e){}mouseDown=false;for(const k in keys)keys[k]=false}
 document.addEventListener('pointerlockchange',()=>{
   const was=locked;locked=document.pointerLockElement===cv;if(locked&&!was)lockAt=performance.now();
   if(was&&!locked&&state==='play'){state='pause';$('pause').hidden=false;mouseDown=false}
 });
-cv.addEventListener('mousedown',e=>{if(state!=='play')return;audioInit();if(!locked&&!isTouch)lock();mouseDown=true});
+let usedTouch=false;
+cv.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'){usedTouch=true;$('touch').hidden=state!=='play';}});
+cv.addEventListener('mousedown',e=>{if(state!=='play')return;audioInit();
+  if(e.button===2)return;                          // botón derecho: arrastrar para mirar
+  if(!locked&&!usedTouch)lock();mouseDown=true});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mouseup',()=>mouseDown=false);
 // Chrome a veces manda un primer movimiento enorme y falso al capturar el mouse:
 // se ignoran los eventos de los primeros 150 ms tras la captura y cualquier salto imposible.
 let lockAt=0;
 addEventListener('mousemove',e=>{
-  if(!locked||state!=='play')return;
-  if(performance.now()-lockAt<150)return;
+  if(state!=='play')return;
+  // sin captura (navegador que la niega, o se usó Esc) se puede mirar arrastrando con el botón derecho
+  if(!locked&&!(e.buttons&2))return;
+  if(locked&&performance.now()-lockAt<150)return;
   const mx=e.movementX,my=e.movementY;
   if(Math.abs(mx)>250||Math.abs(my)>250)return;
-  player.a+=mx*.0025;pitch=Math.max(-PMAX,Math.min(PMAX,pitch-my*.35));
+  player.a+=mx*.0025*sens;pitch=Math.max(-PMAX,Math.min(PMAX,pitch-my*.35*sens));
 });
 
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
@@ -641,17 +665,47 @@ if(isTouch){
   $('tswap').addEventListener('touchstart',e=>{player.weapon^=1;e.preventDefault()},{passive:false});
 }
 
+/* ---------- Gamepad (mapeo estándar: Xbox / PlayStation) ---------- */
+const pad={x:0,y:0,on:false};let padPrev=[];
+const dz=v=>Math.abs(v)<.18?0:(v-Math.sign(v)*.18)/.82;
+function pollPad(dt){
+  pad.on=false;pad.x=pad.y=0;
+  const gps=navigator.getGamepads?navigator.getGamepads():[];
+  const gp=[...gps].find(g=>g&&g.connected);if(!gp)return;
+  const b=i=>!!(gp.buttons[i]&&gp.buttons[i].pressed),ax=i=>gp.axes[i]||0,was=i=>!!padPrev[i];
+  let lx=dz(ax(0)),ly=dz(ax(1));
+  if(b(14))lx=-1;if(b(15))lx=1;if(b(12))ly=-1;if(b(13))ly=1;   // cruceta
+  pad.x=lx;pad.y=ly;pad.on=!!(lx||ly);
+  const rx=dz(ax(2)),ry=dz(ax(3));
+  if(state==='play'){
+    player.a+=rx*2.8*dt*sens;pitch=Math.max(-PMAX,Math.min(PMAX,pitch-ry*260*dt*sens));
+    keys.padFire=b(7)||b(0);keys.padRun=b(10)||b(6);
+    if((b(3)&&!was(3))||(b(5)&&!was(5))||(b(4)&&!was(4)))player.weapon^=1;
+    if(b(11)&&!was(11))pitch=0;
+    if(b(8)&&!was(8))showMap=!showMap;
+  }
+  if(b(9)&&!was(9)){ // Start: jugar / pausa / seguir
+    if(state==='menu')start();else if(state==='dead')restart();
+    else if(state==='pause'){$('pause').hidden=true;state='play'}
+    else if(state==='play'){state='pause';$('pause').hidden=false;unlock()}
+  }
+  padPrev=gp.buttons.map(x=>x.pressed);
+}
+addEventListener('gamepadconnected',()=>msg('GAMEPAD CONECTADO'));
+
 /* ---------- Flujo de juego ---------- */
-function start(){audioInit();$('menu').hidden=true;state='play';if(isTouch)$('touch').hidden=false;else lock()}
-function restart(){newWorld();$('dead').hidden=true;state='play';msg('ZONA 1');if(!isTouch)lock()}
+function start(){audioInit();$('menu').hidden=true;state='play';if(usedTouch)$('touch').hidden=false;else lock()}
+function restart(){newWorld();$('dead').hidden=true;state='play';msg('ZONA 1');if(!usedTouch)lock()}
+$('play').addEventListener('pointerdown',e=>{if(e.pointerType==='touch')usedTouch=true});
 $('play').onclick=start;
 $('retry').onclick=restart;
-$('resume').onclick=()=>{$('pause').hidden=true;state='play';lock()};
+$('resume').onclick=()=>{$('pause').hidden=true;state='play';if(!usedTouch)lock()};
 
 newWorld();
 let last=performance.now();
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
+  pollPad(dt);
   if(state==='play')update(dt);
   else if(state==='menu')player.a+=dt*.15;
   render(now);updateHud();
