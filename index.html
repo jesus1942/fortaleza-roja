@@ -11,7 +11,7 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0606'/%3E%3Cpath d='M4 28V10l4-4 4 4V6h8v4l4-4 4 4v18z' fill='%23b8361e'/%3E%3Crect x='13' y='18' width='6' height='10' fill='%230b0606'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Metal+Mania&family=Chakra+Petch:wght@500;700&family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Metal+Mania&family=Chakra+Petch:wght@500;700&family=VT323&family=Lexend:wght@400;600;700&display=swap">
 <style>
 /* Layout: pantalla de juego a todo el alto — vista 3D arriba, barra de estado metálica abajo. Estética única oscura (elegida a propósito). */
 :root{
@@ -26,6 +26,7 @@
   --f-display:"Metal Mania","Impact",fantasy;
   --f-body:"Chakra Petch","Segoe UI",system-ui,sans-serif;
   --f-num:"VT323","Courier New",monospace;
+  --f-read:"Lexend","Atkinson Hyperlegible",Verdana,"Segoe UI",sans-serif;
   color-scheme:dark;
 }
 [hidden]{display:none!important}
@@ -38,12 +39,10 @@ canvas#cv{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;im
 .cell{background:var(--void);border:1px solid var(--steel-hi);padding:6px 10px;display:flex;flex-direction:column;min-width:0}
 .lab{font-size:11px;letter-spacing:.14em;color:var(--dim);font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .num{font-family:var(--f-num);font-size:clamp(30px,5vw,44px);line-height:.95;color:var(--ember);font-variant-numeric:tabular-nums}
-.num.low{color:var(--rust);animation:blink .5s steps(2) infinite}
+.num.low{color:#ff4a2e;text-shadow:0 0 10px rgba(255,60,30,.6)}
 .sub{font-family:var(--f-num);font-size:18px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar{height:6px;background:var(--steel-hi);margin-top:4px}
 .bar i{display:block;height:100%;width:100%;background:var(--toxic);transition:width .15s}
-@keyframes blink{50%{opacity:.35}}
-@media (prefers-reduced-motion:reduce){.num.low{animation:none}}
 @media (max-width:560px){.hud{grid-template-columns:repeat(2,minmax(0,1fr))}.num{font-size:30px}}
 
 .overlay{position:absolute;inset:0;display:flex;background:rgba(11,6,6,.78);padding:16px;box-sizing:border-box;overflow-y:auto;z-index:5}
@@ -71,11 +70,47 @@ canvas#cv{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;im
 #tswap{right:116px;bottom:24px;width:54px;height:54px;background:rgba(28,23,22,.6)}
 #stick{position:absolute;left:18px;bottom:18px;width:120px;height:120px;border-radius:50%;border:2px solid rgba(234,223,200,.25);background:rgba(28,23,22,.35);pointer-events:none}
 #knob{position:absolute;left:40px;top:40px;width:40px;height:40px;border-radius:50%;background:rgba(234,223,200,.4)}
+
+/* Íconos del HUD: se entienden sin leer */
+.lab{display:flex;align-items:center;gap:6px}
+.lab svg{width:16px;height:16px;flex:none}
+kbd{font-family:var(--f-read);font-size:14px;font-weight:600;color:var(--bone);background:var(--steel-hi);border:1px solid #4a3b37;border-bottom-width:3px;border-radius:4px;padding:1px 7px;display:inline-block;min-width:1.2em;text-align:center}
+.keys b{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+
+/* Mensajes del juego en HTML: nítidos a cualquier tamaño, con ícono y fondo sólido */
+#toasts{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:4;width:min(92%,520px)}
+.toast{display:flex;align-items:center;gap:10px;background:rgba(11,6,6,.88);border-left:4px solid var(--ember);padding:6px 14px 6px 10px;font-family:var(--f-read);font-size:clamp(15px,2.2vw,20px);font-weight:600;color:var(--bone);letter-spacing:.02em;transition:opacity .4s}
+.toast canvas{width:26px;height:26px;image-rendering:pixelated;flex:none}
+.toast.bad{border-left-color:#ff4a2e}.toast.good{border-left-color:var(--toxic)}.toast.gem{border-left-color:#5ff2ff}
+.toast.out{opacity:0}
+
+/* Opciones de accesibilidad */
+.opts{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;font-size:15px;color:var(--bone)}
+.opts label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.opts input{accent-color:var(--rust);width:20px;height:20px}
+.btn.ghost{background:transparent;border:2px solid var(--steel-hi);font-size:15px;padding:8px 18px}
+.btn.ghost:hover{background:var(--steel-hi)}
+
+/* Modo lectura fácil (dislexia): tipografía Lexend, sin mayúsculas forzadas, más aire entre letras, palabras y líneas */
+body.easy{--f-body:var(--f-read)}
+body.easy .lab{text-transform:none;font-size:14px;letter-spacing:.03em;color:#b8a898}
+body.easy .num{font-family:var(--f-read);font-weight:600;font-size:clamp(26px,4vw,38px);line-height:1.1}
+body.easy .sub{font-family:var(--f-read);font-size:14px;letter-spacing:.02em;color:#b8a898}
+body.easy .panel p,body.easy .keys{line-height:1.7;word-spacing:.12em;letter-spacing:.02em;font-size:16px}
+body.easy .keys{color:#c9b9a8}
+body.easy .keys b{font-family:var(--f-read);font-size:15px;font-weight:600}
+body.easy .keys{gap:3px 14px;font-size:15px}
+body.easy .sens output{font-family:var(--f-read);font-size:15px}
+body.easy .panel h2,body.easy #dead h1{font-family:var(--f-read);font-weight:700;letter-spacing:.01em}
+body.easy .btn{text-transform:none;letter-spacing:.04em}
+body.easy .stat{font-family:var(--f-read);font-size:20px;line-height:1.7}
+body.easy .tbtn{font-family:var(--f-read);letter-spacing:.02em}
 </style>
 </head>
 <body><div id="game">
   <div class="view" id="view">
     <canvas id="cv" width="480" height="270" aria-label="Vista del juego en primera persona"></canvas>
+    <div id="toasts" aria-live="polite"></div>
 
     <div id="touch" hidden>
       <div id="stick"><div id="knob"></div></div>
@@ -86,27 +121,32 @@ canvas#cv{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;im
     <div class="overlay" id="menu">
       <div class="panel">
         <h1>Fortaleza Roja</h1>
-        <p>La fortaleza no tiene fin: cada pasillo genera salas nuevas. Cuanto más te alejás del punto de partida, más dura es la zona y más vale cada baja. Juntá botiquines, munición y cristales para sumar puntos.</p>
+        <p>La fortaleza no tiene fin. Cuanto más lejos vas, más difícil es. Juntá botiquines, balas y cristales.</p>
         <div class="keys">
-          <b>W A S D / flechas</b><span>avanzar, retroceder y moverse de costado</span>
-          <b>Mouse / touchpad</b><span>girar y mirar arriba/abajo, a la vez que caminás (clic para capturarlo)</span>
-          <b>Q · E</b><span>girar con teclado</span>
-          <b>R · F · C</b><span>mirar arriba · abajo · centrar</span>
-          <b>Gamepad</b><span>stick izq. moverse · stick der. girar · gatillo disparar</span>
-          <b>Clic / Espacio</b><span>disparar</span>
-          <b>1 · 2</b><span>pistola · escopeta</span>
-          <b>Shift</b><span>correr</span>
-          <b>M</b><span>mapa</span>
+          <b><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></b><span>caminar y moverte de costado</span>
+          <b>Mouse</b><span>girar y mirar arriba o abajo (hacé clic para capturarlo)</span>
+          <b>Clic <kbd>Espacio</kbd></b><span>disparar</span>
+          <b><kbd>Q</kbd><kbd>E</kbd></b><span>girar con el teclado</span>
+          <b><kbd>R</kbd><kbd>F</kbd><kbd>C</kbd></b><span>mirar arriba, abajo y al centro</span>
+          <b><kbd>1</kbd><kbd>2</kbd></b><span>pistola y escopeta</span>
+          <b><kbd>Shift</kbd></b><span>correr</span>
+          <b><kbd>M</kbd></b><span>mapa</span>
+          <b>Gamepad</b><span>stick izquierdo camina, stick derecho gira, gatillo dispara</span>
         </div>
         <label class="sens">Sensibilidad del mouse <input type="range" id="sens" min="0.3" max="3" step="0.1" value="1"> <output id="sensv">1.0×</output></label>
         <p class="touchhelp">Joystick a la izquierda para moverte · deslizá a la derecha para girar · botón FUEGO para disparar (también gira si lo arrastrás) · ARMA cambia de arma.</p>
+        <div class="opts">
+          <label><input type="checkbox" data-opt="easy"> Lectura fácil</label>
+          <label><input type="checkbox" data-opt="voice"> Leer en voz alta</label>
+        </div>
         <button class="btn" id="play">Jugar</button>
+        <button class="btn ghost" id="listen" type="button">Escuchar instrucciones</button>
         <p class="tip">¿Usás touchpad y no gira mientras caminás? Tu sistema lo apaga al tocar teclas: desactivá «deshabilitar touchpad al escribir» en la configuración del touchpad.</p>
       </div>
     </div>
 
     <div class="overlay" id="pause" hidden>
-      <div class="panel"><h2>Pausa</h2><p>Hacé clic para volver al combate.</p><label class="sens">Sensibilidad del mouse <input type="range" id="sens2" min="0.3" max="3" step="0.1" value="1"></label><button class="btn" id="resume">Seguir</button></div>
+      <div class="panel"><h2>Pausa</h2><p>Hacé clic para volver al combate.</p><div class="opts">  <label><input type="checkbox" data-opt="easy"> Lectura fácil</label>  <label><input type="checkbox" data-opt="voice"> Leer en voz alta</label></div><label class="sens">Sensibilidad del mouse <input type="range" id="sens2" min="0.3" max="3" step="0.1" value="1"></label><button class="btn" id="resume">Seguir</button></div>
     </div>
 
     <div class="overlay" id="dead" hidden>
@@ -119,10 +159,10 @@ canvas#cv{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;im
   </div>
 
   <div class="hud" role="status">
-    <div class="cell"><span class="lab">Vida</span><span class="num" id="hp">100</span><div class="bar"><i id="hpbar"></i></div></div>
-    <div class="cell"><span class="lab" id="wname">Pistola</span><span class="num" id="ammo">60</span><span class="sub" id="ammo2">cartuchos 10</span></div>
-    <div class="cell"><span class="lab">Puntos</span><span class="num" id="score">0</span><span class="sub" id="best">récord 0</span></div>
-    <div class="cell"><span class="lab">Zona</span><span class="num" id="lvl">1</span><span class="sub" id="foes">bajas 0 · 0 m</span></div>
+    <div class="cell"><span class="lab"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14 2 8a3.4 3.4 0 0 1 6-4 3.4 3.4 0 0 1 6 4z" fill="#ff4a2e"/></svg>Vida</span><span class="num" id="hp">100</span><div class="bar"><i id="hpbar"></i></div></div>
+    <div class="cell"><span class="lab"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6h3v8H3zM7 4h3v10H7zM11 6h3v8h-3z" fill="#d9b23a"/><path d="M3 6l1.5-3L6 6M7 4l1.5-3L10 4M11 6l1.5-3L14 6" fill="#c9a227"/></svg><span id="wname">Pistola</span></span><span class="num" id="ammo">60</span><span class="sub" id="ammo2">cartuchos 10</span></div>
+    <div class="cell"><span class="lab"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m8 1 2.1 4.4 4.9.6-3.6 3.3.9 4.8L8 11.8 3.7 14l.9-4.8L1 6l4.9-.6z" fill="#5ff2ff"/></svg>Puntos</span><span class="num" id="score">0</span><span class="sub" id="best">récord 0</span></div>
+    <div class="cell"><span class="lab"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1h2v14H3z" fill="#eadfc8"/><path d="M5 2h8l-2 3 2 3H5z" fill="#ff8a2a"/></svg>Zona</span><span class="num" id="lvl">1</span><span class="sub" id="foes">bajas 0 · 0 m</span></div>
   </div>
 </div>
 
@@ -419,8 +459,10 @@ function render(time){
   // mira
   ctx.fillStyle='rgba(234,223,200,.7)';ctx.fillRect(W/2-1,H/2-5,2,3);ctx.fillRect(W/2-1,H/2+3,2,3);ctx.fillRect(W/2-6,H/2-1,3,2);ctx.fillRect(W/2+4,H/2-1,3,2);
   // mensajes
-  ctx.font='16px VT323, monospace';ctx.textAlign='center';
-  msgs.forEach((m,i)=>{ctx.fillStyle=`rgba(255,138,42,${Math.min(1,m.t)})`;ctx.fillText(m.text,W/2,22+i*16)});
+  // indicador de dirección del daño: un arco rojo del lado de donde vino el golpe
+  for(const h of hits){const rel=angDiff(h.a,player.a)-Math.PI/2;ctx.strokeStyle=`rgba(255,40,20,${Math.min(.9,h.t*1.4)})`;ctx.lineWidth=8;ctx.beginPath();ctx.arc(W/2,H/2,92,rel-.35,rel+.35);ctx.stroke()}
+  // vida baja: borde rojo fijo (sin parpadeo)
+  if(player.hp>0&&player.hp<=25){const g=ctx.createRadialGradient(W/2,H/2,H*.35,W/2,H/2,H*.85);g.addColorStop(0,'rgba(180,0,0,0)');g.addColorStop(1,'rgba(180,0,0,.45)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
   if(showMap)drawMap();
 }
 
@@ -465,7 +507,31 @@ function drawMap(){
 }
 
 /* ---------- Lógica ---------- */
-function msg(text){msgs.push({text,t:2.2});if(msgs.length>4)msgs.shift()}
+/* Mensajes: HTML nítido + ícono del objeto + voz opcional. Frases cortas, sin mayúsculas sostenidas. */
+const toastBox=$('toasts');
+function msg(text,o={}){
+  const el=document.createElement('div');el.className='toast '+(o.tone||'');
+  if(o.icon){const c=document.createElement('canvas');c.width=o.icon.width;c.height=o.icon.height;c.getContext('2d').drawImage(o.icon,0,0);el.appendChild(c)}
+  el.appendChild(document.createTextNode(text));toastBox.appendChild(el);
+  while(toastBox.children.length>3)toastBox.firstChild.remove();
+  setTimeout(()=>el.classList.add('out'),o.long?4200:3000);setTimeout(()=>el.remove(),o.long?4700:3500);
+  if(o.say)say(o.sayText||text,o.say==='now');
+}
+const OPT={easy:true,voice:false};
+try{const v=localStorage.getItem('fr_easy');if(v!==null)OPT.easy=v==='1';OPT.voice=localStorage.getItem('fr_voice')==='1'}catch(e){}
+function applyOpts(){document.body.classList.toggle('easy',OPT.easy);document.querySelectorAll('[data-opt]').forEach(i=>i.checked=OPT[i.dataset.opt])}
+document.querySelectorAll('[data-opt]').forEach(i=>i.addEventListener('change',()=>{OPT[i.dataset.opt]=i.checked;
+  try{localStorage.setItem('fr_'+i.dataset.opt,i.checked?'1':'0')}catch(e){}applyOpts();if(i.dataset.opt==='voice'&&i.checked)say('Voz activada',true);if(!i.checked&&i.dataset.opt==='voice')try{speechSynthesis.cancel()}catch(e){}}));
+applyOpts();
+function say(t,urgent){
+  if(!OPT.voice||!('speechSynthesis' in window))return;
+  try{const ss=speechSynthesis;if(urgent)ss.cancel();else if(ss.speaking||ss.pending)return;
+    const u=new SpeechSynthesisUtterance(t);u.lang='es-AR';u.rate=1.05;
+    const v=ss.getVoices().filter(v=>v.lang&&v.lang.toLowerCase().startsWith('es'));u.voice=v.find(x=>/AR|419|MX|US/.test(x.lang))||v[0]||null;ss.speak(u)}catch(e){}
+}
+const STAR=mk(16,16,g=>{g.fillStyle='#ffd23a';g.beginPath();for(let i=0;i<10;i++){const r=i%2?3.5:7.5,a=-Math.PI/2+i*Math.PI/5;g.lineTo(8+Math.cos(a)*r,8+Math.sin(a)*r)}g.fill()});
+const FLAG=mk(16,16,g=>{g.fillStyle='#eadfc8';g.fillRect(3,1,2,14);g.fillStyle='#ff8a2a';g.beginPath();g.moveTo(5,2);g.lineTo(13,2);g.lineTo(11,5);g.lineTo(13,8);g.lineTo(5,8);g.fill()});
+let hits=[],lowWarned=false;
 function tryMove(o,dx,dy,r){
   if(!solid(o.x+dx+Math.sign(dx)*r,o.y-r*.9)&&!solid(o.x+dx+Math.sign(dx)*r,o.y+r*.9))o.x+=dx;
   if(!solid(o.x-r*.9,o.y+dy+Math.sign(dy)*r)&&!solid(o.x+r*.9,o.y+dy+Math.sign(dy)*r))o.y+=dy;
@@ -475,8 +541,8 @@ function angDiff(a,b){let d=a-b;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+
 function fire(){
   if(player.cool>0)return;
   const w=player.weapon;
-  if(w===0&&player.bullets<=0){if(player.shells>0){player.weapon=1;msg('SIN BALAS — ESCOPETA')}else SFX.click();player.cool=.3;return}
-  if(w===1&&player.shells<=0){if(player.bullets>0){player.weapon=0;msg('SIN CARTUCHOS — PISTOLA')}else SFX.click();player.cool=.3;return}
+  if(w===0&&player.bullets<=0){if(player.shells>0){player.weapon=1;msg('Sin balas. Cambio a escopeta',{icon:ITEM.shells,tone:'bad',say:'now'})}else SFX.click();player.cool=.3;return}
+  if(w===1&&player.shells<=0){if(player.bullets>0){player.weapon=0;msg('Sin cartuchos. Cambio a pistola',{icon:ITEM.ammo,tone:'bad',say:'now'})}else SFX.click();player.cool=.3;return}
   let pellets,spread,dmg;
   if(w===0){player.bullets--;pellets=1;spread=.012;dmg=[14,24];player.cool=.32;SFX.pistol()}
   else{player.shells--;pellets=7;spread=.09;dmg=[8,14];player.cool=.85;SFX.shotgun()}
@@ -496,21 +562,24 @@ function fire(){
 }
 function hurtEnemy(e,d){
   e.hp-=d;if(e.state==='idle'){e.state='chase'}
-  if(e.hp<=0){e.state='dead';SFX.die();const p=ETYPE[e.type].pts;score+=p;totalKills++;msg(`+${p} PUNTOS`);
+  if(e.hp<=0){e.state='dead';SFX.die();const p=ETYPE[e.type].pts;score+=p;totalKills++;msg(`+${p} puntos`,{icon:STAR});
     if(Math.random()<.35)items.push({kind:pick(['ammo','shells','med']),x:e.x,y:e.y,ph:0});
   }else{SFX.hit();if(Math.random()<.6){e.state='pain';e.t=.18}}
 }
-function hurtPlayer(d){
+function hurtPlayer(d,sx,sy){
   if(state!=='play')return;
   player.hp-=Math.round(d*(1+(level-1)*.06));flash.hurt=.6;SFX.hurt();
+  if(sx!==undefined){hits.push({a:Math.atan2(sy-player.y,sx-player.x),t:.9});if(hits.length>4)hits.shift()}
+  if(player.hp>0&&player.hp<=25&&!lowWarned){lowWarned=true;msg('Vida baja. Buscá un botiquín',{icon:ITEM.med,tone:'bad',long:true,say:'now'})}
   if(player.hp<=0){player.hp=0;gameOver()}
 }
 
 function update(dt){
   runTime+=dt;
+  for(const h of hits)h.t-=dt;hits=hits.filter(h=>h.t>0);if(player.hp>25)lowWarned=false;
   // zona según la distancia al origen
   const pcx=Math.floor(player.x/C),pcy=Math.floor(player.y/C);level=zoneOf(pcx,pcy);
-  if(level>maxZone){maxZone=level;const b=250*level;score+=b;msg(`ZONA ${level} ALCANZADA +${b}`);SFX.gem()}
+  if(level>maxZone){maxZone=level;const b=250*level;score+=b;msg(`Zona ${level}. Premio +${b}`,{icon:FLAG,tone:'gem',long:true,say:'now',sayText:`Llegaste a la zona ${level}`});SFX.gem()}
   // refuerzos: si hay pocos hostiles cerca, aparecen fuera de la vista
   spawnT-=dt;
   if(spawnT<=0&&runTime>20){spawnT=rnd(6,11)/(1+level*.08);
@@ -539,10 +608,10 @@ function update(dt){
   // recoger objetos
   items=items.filter(it=>{
     if(Math.hypot(it.x-player.x,it.y-player.y)>.55)return true;
-    if(it.kind==='med'){if(player.hp>=100)return true;player.hp=Math.min(100,player.hp+25);msg('+25 VIDA');SFX.pick()}
-    else if(it.kind==='ammo'){if(player.bullets>=200)return true;player.bullets=Math.min(200,player.bullets+20);msg('+20 BALAS');SFX.pick()}
-    else if(it.kind==='shells'){if(player.shells>=50)return true;player.shells=Math.min(50,player.shells+6);msg('+6 CARTUCHOS');SFX.pick()}
-    else{score+=250;msg('CRISTAL +250 PUNTOS');SFX.gem()}
+    if(it.kind==='med'){if(player.hp>=100)return true;player.hp=Math.min(100,player.hp+25);msg('+25 vida',{icon:ITEM.med,tone:'good',say:1,sayText:'Vida'});SFX.pick()}
+    else if(it.kind==='ammo'){if(player.bullets>=200)return true;player.bullets=Math.min(200,player.bullets+20);msg('+20 balas',{icon:ITEM.ammo,tone:'good',say:1,sayText:'Balas'});SFX.pick()}
+    else if(it.kind==='shells'){if(player.shells>=50)return true;player.shells=Math.min(50,player.shells+6);msg('+6 cartuchos',{icon:ITEM.shells,tone:'good',say:1,sayText:'Cartuchos'});SFX.pick()}
+    else{score+=250;msg('Cristal +250 puntos',{icon:ITEM.crystal,tone:'gem',say:1,sayText:'Cristal'});SFX.gem()}
     flash.pick=.4;return false;
   });
   // enemigos
@@ -560,17 +629,18 @@ function update(dt){
     else if(T.keep&&d<T.keep-1){const s=T.speed*dt;tryMove(e,-ex/d*s,-ey/d*s,.3)}
     e.cool-=dt;
     if(e.cool<=0&&see){
-      if(T.melee&&d<1.15){hurtPlayer(rnd(T.melee*.8,T.melee*1.2));e.state='attack';e.t=.35;e.cool=rnd(.9,1.4)}
+      if(T.melee&&d<1.15){hurtPlayer(rnd(T.melee*.8,T.melee*1.2),e.x,e.y);e.state='attack';e.t=.35;e.cool=rnd(.9,1.4)}
       else if(d<T.range){const a=Math.atan2(ey,ex)+rnd(-.05,.05);shots.push({kind:T.shot,x:e.x+Math.cos(a)*.4,y:e.y+Math.sin(a)*.4,vx:Math.cos(a)*T.sspd,vy:Math.sin(a)*T.sspd,dmg:T.sdmg});SFX.shoot();e.state='attack';e.t=.4;e.cool=rnd(1.6,3.2)/(1+(e.zone-1)*.07)}
     }
   }
   // proyectiles
-  shots=shots.filter(s=>{s.x+=s.vx*dt;s.y+=s.vy*dt;if(solid(s.x,s.y))return false;if(Math.hypot(s.x-player.x,s.y-player.y)<.38){hurtPlayer(rnd(s.dmg*.8,s.dmg*1.2));return false}return true});
+  shots=shots.filter(s=>{s.x+=s.vx*dt;s.y+=s.vy*dt;if(solid(s.x,s.y))return false;if(Math.hypot(s.x-player.x,s.y-player.y)<.38){hurtPlayer(rnd(s.dmg*.8,s.dmg*1.2),s.x-s.vx,s.y-s.vy);return false}return true});
 }
 
 function gameOver(){
   state='dead';saveBest();unlock();
-  $('deadStats').innerHTML=`Puntos ${score}<br>Zona máxima ${maxZone} · Bajas ${totalKills}<br>Recorrido ${Math.round(distWalked)} m · Récord ${best}`;
+  $('deadStats').innerHTML=`Puntos: ${score}<br>Zona más lejana: ${maxZone}<br>Enemigos vencidos: ${totalKills}<br>Recorrido: ${Math.round(distWalked)} m<br>Récord: ${best}`;
+  say(`Caíste. Hiciste ${score} puntos y llegaste a la zona ${maxZone}.`,true);
   $('dead').hidden=false;
 }
 function saveBest(){if(score>best){best=score;try{localStorage.setItem('fr_best',best)}catch(e){}}}
@@ -691,13 +761,14 @@ function pollPad(dt){
   }
   padPrev=gp.buttons.map(x=>x.pressed);
 }
-addEventListener('gamepadconnected',()=>msg('GAMEPAD CONECTADO'));
+addEventListener('gamepadconnected',()=>msg('Gamepad conectado',{say:1}));
 
 /* ---------- Flujo de juego ---------- */
 function start(){audioInit();$('menu').hidden=true;state='play';if(usedTouch)$('touch').hidden=false;else lock()}
-function restart(){newWorld();$('dead').hidden=true;state='play';msg('ZONA 1');if(!usedTouch)lock()}
+function restart(){newWorld();$('dead').hidden=true;state='play';msg('Zona 1',{icon:FLAG});if(!usedTouch)lock()}
 $('play').addEventListener('pointerdown',e=>{if(e.pointerType==='touch')usedTouch=true});
 $('play').onclick=start;
+$('listen').onclick=()=>{const was=OPT.voice;OPT.voice=true;say('Fortaleza Roja. Caminá con las teclas W, A, S y D. Girá y apuntá con el mouse. Disparás con clic o con la barra espaciadora. Los botiquines te curan, las cajas te dan balas y los cristales azules te dan puntos. Cuanto más lejos vayas, más difícil es.',true);OPT.voice=was};
 $('retry').onclick=restart;
 $('resume').onclick=()=>{$('pause').hidden=true;state='play';if(!usedTouch)lock()};
 
